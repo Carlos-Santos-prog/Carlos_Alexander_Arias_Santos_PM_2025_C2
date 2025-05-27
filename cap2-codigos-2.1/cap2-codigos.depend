@@ -1,0 +1,8 @@
+# depslib dependency file v1.0
+1748201693 source:c:\users\lenovo\desktop\codigos\cap2-codigos\prog-2.c
+	<stdio.h>
+
+1748201612 source:c:\users\lenovo\desktop\codigos\cap2-codigos\main.c
+	<stdio.h>
+	<stdlib.h>
+
