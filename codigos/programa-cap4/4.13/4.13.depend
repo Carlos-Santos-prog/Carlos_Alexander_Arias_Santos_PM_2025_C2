@@ -1,0 +1,6 @@
+# depslib dependency file v1.0
+1750461913 source:c:\users\lenovo\desktop\codigos\programa-cap4\4.13\main.c
+	<stdio.h>
+	<stdlib.h>
+	<math.h>
+
