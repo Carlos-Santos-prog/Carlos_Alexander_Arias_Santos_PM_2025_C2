@@ -1,0 +1,6 @@
+# depslib dependency file v1.0
+1752204233 source:c:\users\lenovo\desktop\codigos\alumno con punteros\main.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+
