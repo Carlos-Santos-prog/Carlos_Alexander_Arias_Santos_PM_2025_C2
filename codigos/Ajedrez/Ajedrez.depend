@@ -1,0 +1,6 @@
+# depslib dependency file v1.0
+1753404171 source:c:\users\alexander\onedrive\documentos\programacion\ajedrez\main.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+
