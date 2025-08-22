@@ -7,16 +7,17 @@
 
 #define TIPO_GASOLINA 1
 #define TIPO_GASOIL   2
+#define DATA_FILE "vehiculos.dat"
 
 typedef struct {
     char placa[STR];
     char marca[STR];
     char modelo[STR];
-    int    tipo_combustible;
+    int tipo_combustible;
     double km_gal_carretera;
     double km_gal_ciudad;
     double costo_gomas;
-    double km_gomas;
+    int vida_gomas_anios;
     double costo_seguro_anual;
     double costo_mantenimiento;
     double km_entre_mant;
@@ -69,7 +70,7 @@ void mostrar_uno(const Vehiculo *v, int idx) {
     printf("Combustible: %s\n", (v->tipo_combustible==TIPO_GASOLINA)?"Gasolina":"Gasoil");
     printf("Km/gal carretera: %.2f\n", v->km_gal_carretera);
     printf("Km/gal ciudad:    %.2f\n", v->km_gal_ciudad);
-    printf("Gomas -> costo: %.2f | vida: %.0f km\n", v->costo_gomas, v->km_gomas);
+    printf("Gomas -> costo: %.2f | vida: %d anios\n", v->costo_gomas, v->vida_gomas_anios);
     printf("Seguro anual: %.2f\n", v->costo_seguro_anual);
     printf("Mantenimiento -> costo: %.2f | cada: %.0f km\n", v->costo_mantenimiento, v->km_entre_mant);
     printf("Vehiculo -> costo: %.2f | vida util: %d anios | km/anio: %.0f\n",
@@ -97,8 +98,8 @@ void crear_vehiculo(Vehiculo **nuevo_out) {
     v->km_gal_carretera = leer_double("Km por galon en carretera: ");
     v->km_gal_ciudad    = leer_double("Km por galon en ciudad: ");
 
-    v->costo_gomas = leer_double("Costo del juego de gomas: ");
-    v->km_gomas    = leer_double("Vida de gomas (km): ");
+    v->costo_gomas       = leer_double("Costo del juego de gomas: ");
+    v->vida_gomas_anios  = leer_entero("Vida de gomas (anios): ");
 
     v->costo_seguro_anual = leer_double("Costo del seguro (12 meses): ");
 
@@ -112,6 +113,45 @@ void crear_vehiculo(Vehiculo **nuevo_out) {
     *nuevo_out = v;
 }
 
+void guardar_todo(void) {
+    FILE *f = fopen(DATA_FILE, "wb");
+    if (!f) return;
+
+    fwrite(&precio_gasolina_galon, sizeof(precio_gasolina_galon), 1, f);
+    fwrite(&precio_gasoil_galon,   sizeof(precio_gasoil_galon),   1, f);
+
+    fwrite(&n_veh, sizeof(n_veh), 1, f);
+
+    for (int i = 0; i < n_veh; ++i) {
+        fwrite(lista[i], sizeof(Vehiculo), 1, f);
+    }
+
+    fclose(f);
+}
+
+void cargar_todo(void) {
+    FILE *f = fopen(DATA_FILE, "rb");
+    if (!f) return;
+
+    if (fread(&precio_gasolina_galon, sizeof(precio_gasolina_galon), 1, f) != 1) { fclose(f); return; }
+    if (fread(&precio_gasoil_galon,   sizeof(precio_gasoil_galon),   1, f) != 1) { fclose(f); return; }
+
+    int count = 0;
+    if (fread(&count, sizeof(count), 1, f) != 1) { fclose(f); return; }
+    if (count < 0) count = 0;
+    if (count > MAX_VEH) count = MAX_VEH;
+
+    n_veh = 0;
+    for (int i = 0; i < count; ++i) {
+        Vehiculo *v = (Vehiculo*)malloc(sizeof(Vehiculo));
+        if (!v) break;
+        if (fread(v, sizeof(Vehiculo), 1, f) != 1) { free(v); break; }
+        lista[n_veh++] = v;
+    }
+
+    fclose(f);
+}
+
 void insertar_vehiculo(Vehiculo **arr, int *n_p, Vehiculo *v) {
     if (*n_p >= MAX_VEH) {
         puts("Capacidad llena.");
@@ -121,6 +161,7 @@ void insertar_vehiculo(Vehiculo **arr, int *n_p, Vehiculo *v) {
     arr[*n_p] = v;
     (*n_p)++;
     puts("Vehiculo creado.");
+    guardar_todo();
 }
 
 void borrar_vehiculo(Vehiculo **arr, int *n_p) {
@@ -133,6 +174,7 @@ void borrar_vehiculo(Vehiculo **arr, int *n_p) {
     for (int i = idx; i < (*n_p) - 1; ++i) arr[i] = arr[i+1];
     (*n_p)--;
     puts("Vehiculo borrado.");
+    guardar_todo();
 }
 
 void modificar_vehiculo(void) {
@@ -156,7 +198,7 @@ void modificar_vehiculo(void) {
     x = leer_double("Km/gal ciudad (-9999 no cambiar): ");    if (x != -9999) v->km_gal_ciudad    = x;
 
     x = leer_double("Costo gomas (-9999 no cambiar): "); if (x != -9999) v->costo_gomas = x;
-    x = leer_double("Km gomas (-9999 no cambiar): ");    if (x != -9999) v->km_gomas    = x;
+    y = leer_entero("Vida de gomas anios (-1 no cambiar): "); if (y != -1) v->vida_gomas_anios = y;
 
     x = leer_double("Seguro anual (-9999 no cambiar): "); if (x != -9999) v->costo_seguro_anual = x;
 
@@ -168,6 +210,7 @@ void modificar_vehiculo(void) {
     x  = leer_double("Km por anio (-9999 no cambiar): ");    if (x != -9999) v->km_por_anio = x;
 
     puts("Vehiculo modificado.");
+    guardar_todo();
 }
 
 void ver_datos_generales(void) {
@@ -180,6 +223,7 @@ void editar_datos_generales(void) {
     precio_gasolina_galon = leer_double("Nuevo precio gasolina/galon: ");
     precio_gasoil_galon   = leer_double("Nuevo precio gasoil/galon: ");
     puts("Datos generales actualizados.");
+    guardar_todo();
 }
 
 double costo_combustible(const Vehiculo *v, double km_total, double pct_ciudad) {
@@ -196,8 +240,9 @@ double costo_combustible(const Vehiculo *v, double km_total, double pct_ciudad) 
 }
 
 double costo_gomas(const Vehiculo *v, double km_total) {
-    if (v->km_gomas <= 0) return 0.0;
-    return (v->costo_gomas / v->km_gomas) * km_total;
+    if (v->vida_gomas_anios <= 0 || v->km_por_anio <= 0) return 0.0;
+    double km_vida_gomas = v->vida_gomas_anios * v->km_por_anio;
+    return (v->costo_gomas / km_vida_gomas) * km_total;
 }
 
 double costo_seguro(const Vehiculo *v, double km_total) {
@@ -259,28 +304,34 @@ void menu_principal(void) {
 }
 
 int main(void) {
-    Vehiculo *demo = (Vehiculo*)malloc(sizeof(Vehiculo));
-    if (demo) {
-        strcpy(demo->placa, "M123XYZ");
-strcpy(demo->marca, "Mercedes");
-strcpy(demo->modelo, "Clase C");
-demo->tipo_combustible = TIPO_GASOLINA;
-demo->km_gal_carretera = 70.1;
-demo->km_gal_ciudad    = 50.5;
-demo->costo_gomas = 25000.0;
-demo->km_gomas = 50000.0;
-demo->costo_seguro_anual = 30000.0;
-demo->costo_mantenimiento = 2600.0;
-demo->km_entre_mant = 10000.0;
-demo->costo_vehiculo  = 4500000.0;
-demo->vida_util_anios = 8;
-demo->km_por_anio = 15000.0;
-lista[n_veh++] = demo;
+    cargar_todo();
+
+    if (n_veh == 0) {
+        Vehiculo *demo = (Vehiculo*)malloc(sizeof(Vehiculo));
+        if (demo) {
+            strcpy(demo->placa, "M123XYZ");
+            strcpy(demo->marca, "Mercedes");
+            strcpy(demo->modelo, "Clase C");
+            demo->tipo_combustible = TIPO_GASOLINA;
+            demo->km_gal_carretera = 70.1;
+            demo->km_gal_ciudad    = 50.5;
+            demo->costo_gomas = 25000.0;
+            demo->vida_gomas_anios = 3;
+            demo->costo_seguro_anual = 30000.0;
+            demo->costo_mantenimiento = 2600.0;
+            demo->km_entre_mant = 10000.0;
+            demo->costo_vehiculo  = 4500000.0;
+            demo->vida_util_anios = 8;
+            demo->km_por_anio = 15000.0;
+            lista[n_veh++] = demo;
+            guardar_todo();
+        }
     }
+
     for (;;) {
         menu_principal();
         int op = leer_entero("Opcion: ");
-        if (op == 0) break;
+        if (op == 0) { guardar_todo(); break; }
         if (op == 1) {
             Vehiculo *nuevo = NULL;
             crear_vehiculo(&nuevo);
@@ -307,6 +358,7 @@ lista[n_veh++] = demo;
             puts("Opcion invalida.");
         }
     }
+
     for (int i=0;i<n_veh;i++) free(lista[i]);
     puts("Hasta luego.");
     return 0;
